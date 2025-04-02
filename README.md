@@ -23,7 +23,7 @@ I would like to give huge thanks and kudos to everyone who contributed to the am
 and all the other fantastic sources (most listed in the code), tests and forums for NES emulator development and 6502
 progamming.  Without these resources it would have been impossible to develop this emulator.
 
-### Usage
+## Usage
 
 Basic usage:
 
@@ -65,9 +65,15 @@ Pure python version:
     pynes = pyNES("my_rom.nes")
     pynes.run()
 
+## Changes by Joost
+Added functions to `nes/cycore/system.pyd/pyx`:
+-  cpdef object get_snapshot(self)
+-  cpdef object set_snapshot(self, object state)
+-  cpdef object step_rl(self, int action=?, int run_frames=?)
 
+The original pyntendo code (https://github.com/jameskmurphy/nes/tree/main) is forked. Next I installed this local python package using `$ python -m pip install -e ./nes`. The -e makes it editable. I made changes in `./nes/nes/cycore/system.pxd` (pxd files works in cython like c header files, see https://docs.cython.org/en/latest/src/tutorial/pxd_files.html) and `./nes/nes/cycore/system.pyx` (pxy files are cython source files, see https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html). Once changes are made then you need to rerun `$ python -m pip install -e ./nes` which will compile the cython files and uninstall the previous version automatically. You could optionally increase version key in `./nes/setup.py`. Next you must restart the Jupyter notebook to load the updated package.
 
-### Screenshots
+## Screenshots
 
 Here are some screenshots of the emulator in action: Super Mario Brothers, Donkey Kong, MegaMan
 
@@ -75,7 +81,7 @@ Here are some screenshots of the emulator in action: Super Mario Brothers, Donke
 <img src="/img/donkeykong.png" height="300">
 <img src="/img/megaman.png" height="300">
 
-### Controls
+## Controls
 
 Default keymap is:
 
@@ -91,8 +97,7 @@ OSD/Volume controls:
     Mute: 0
 
 
-
-### Dependencies
+## Dependencies
 
 Depends on the following libraries for key functionality:
 * numpy (optional?)
@@ -110,6 +115,6 @@ Depends on the following libraries for key functionality:
   * OpenGL rendering
   * (not essential; can use SDL rendering via pygame)
 
-### License
+## License
 
 Distributed under the MIT License (see [here](LICENSE))
