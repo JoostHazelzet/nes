@@ -1,7 +1,5 @@
 # Pyntendo
 
-    pip install pyntendo
-
 A Nintendo Entertainment System (NES) emulator written in Python and Cython.
 * All core components are implemented, including audio, and the most important mappers.
 * Performant (runs at 60fps on modern machines)
@@ -22,6 +20,15 @@ performance and accuracy and probably make some hard to emulate games work or wo
 I would like to give huge thanks and kudos to everyone who contributed to the amazing [NESDev Wiki](wiki.nesdev.com)
 and all the other fantastic sources (most listed in the code), tests and forums for NES emulator development and 6502
 progamming.  Without these resources it would have been impossible to develop this emulator.
+
+## Changes by Joost
+
+The original pyntendo code (https://github.com/jameskmurphy/nes/tree/main) is forked. Next I installed this local python package using `$ python -m pip install -e ./nes`. The -e makes it editable. I made changes in `./nes/nes/cycore/system.pxd` (pxd files works in cython like c header files, see https://docs.cython.org/en/latest/src/tutorial/pxd_files.html) and `./nes/nes/cycore/system.pyx` (pxy files are cython source files, see https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html). Once changes are made then you need to rerun `$ python -m pip install -e ./nes` which will compile the cython files and uninstall the previous version automatically. You could optionally increase version key in `./nes/setup.py`. Next you must restart the Jupyter notebook to load the updated package.
+
+Added functions to `nes/cycore/system.pyd/pyx`:
+-  cpdef object get_snapshot(self)
+-  cpdef object set_snapshot(self, object state)
+-  cpdef object step_rl(self, int action=?, int run_frames=?)
 
 ## Usage
 
@@ -64,14 +71,6 @@ Pure python version:
     from nes.pycore.system import NES as pyNES
     pynes = pyNES("my_rom.nes")
     pynes.run()
-
-## Changes by Joost
-Added functions to `nes/cycore/system.pyd/pyx`:
--  cpdef object get_snapshot(self)
--  cpdef object set_snapshot(self, object state)
--  cpdef object step_rl(self, int action=?, int run_frames=?)
-
-The original pyntendo code (https://github.com/jameskmurphy/nes/tree/main) is forked. Next I installed this local python package using `$ python -m pip install -e ./nes`. The -e makes it editable. I made changes in `./nes/nes/cycore/system.pxd` (pxd files works in cython like c header files, see https://docs.cython.org/en/latest/src/tutorial/pxd_files.html) and `./nes/nes/cycore/system.pyx` (pxy files are cython source files, see https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html). Once changes are made then you need to rerun `$ python -m pip install -e ./nes` which will compile the cython files and uninstall the previous version automatically. You could optionally increase version key in `./nes/setup.py`. Next you must restart the Jupyter notebook to load the updated package.
 
 ## Screenshots
 
