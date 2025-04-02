@@ -122,6 +122,15 @@ cdef class NESMappedRAM(MemoryBase):
         # tell the interrupt listener that the CPU should pause due to OAM DMA
         self.interrupt_listener.raise_dma_pause(OAM_DMA)
 
+    cdef object get_ram_state(self):
+        # annoyingly, Cython pickles char arrays as null terminated strings, so we have to do this manually
+        return self.ram[:RAM_SIZE]
+
+    cdef void set_ram_state(self, state):
+        for i in range(RAM_SIZE):
+            self.ram[i] = state[i]
+
+
     def __getstate__(self):
         # annoyingly, Cython pickles char arrays as null terminated strings, so we have to do this manually
         ram = self.ram[:RAM_SIZE]

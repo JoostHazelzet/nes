@@ -102,6 +102,18 @@ cdef class NES:
 
     STATS_CALC_PERIOD_S = 1.0        # how often to calculate the adaptive audio rate and fps counter
 
+    DK_STATES = {
+        0x00: "Play",
+        0x01: "Starting a game",
+        0x02: "Zone 1 victory",
+        0x03: "Zone 2 victory",
+        0x08: "Starting a stage",
+        0x10: "Zone 3 victory",
+        0x20: "Bonus event",
+        0x40: "Pause",
+        0x80: "Title"
+    }
+
     def __init__(self,
                  rom_file,                  # the rom file to load
                  screen_scale=3,            # factor by which to scale the screen
@@ -465,6 +477,94 @@ cdef class NES:
         buffer_rgb = buffer.view(dtype=np.uint8).reshape((w, h, 4))[:, :, np.array([2, 1, 0])].swapaxes(0, 1)
         return buffer_rgb
 
+    cpdef object get_snapshot(self):
+        """
+        Get the state from nes
+        :return: (ram_state, cpu_state, ppu_state)
+        """
+        ram_state = self.memory.get_ram_state()
+        ram_state = np.frombuffer(ram_state, dtype=np.uint8)
+
+        cpu_state = self.cpu.get_cpu_state()
+
+        ppu_state = self.ppu.get_ppu_state()
+
+        return (ram_state, cpu_state, ppu_state)
+
+    cpdef object set_snapshot(self, object state):
+        """
+        Set the state of nes
+        :param state: (ram_state, cpu_state, ppu_state)
+        :return:
+        """
+        ram_state, cpu_state, ppu_state = state
+ 
+        self.memory.set_ram_state(ram_state.tobytes())
+        self.cpu.set_cpu_state(cpu_state)
+        self.ppu.set_ppu_state(ppu_state)
+
+        return self.run_frame_headless(2) # run 2 frames to get the screen buffer correct again. No correction on cycles (cpu_state) or anything else.
+        
+    cpdef object step_rl(self, int action=0, int run_frames=4):
+        """
+        Run by default 4 frames with given action adn return observation and reward.
+        :param action: [NOOP=0, LEFT=1, RIGHT=2, UP=3, DOWN=4, JUMP=5, JUMPLEFT=6, JUMPRIGHT=7, JUMPUP=8]
+        :return: tuple of (observation, reward)
+        """
+
+        # controller state = [A, B, select, start, up, down, left, right]. A is used to jump.
+        controller_state = [False] * 8 # default state is NOOP.
+
+        if action == 1:  # LEFT
+            controller_state = [False, False, False, False, False, False, True, False]
+        elif action == 2:  # RIGHT
+            controller_state = [False, False, False, False, False, False, False, True]
+        elif action == 3:  # UP
+            controller_state = [False, False, False, False, True, False, False, False]
+        elif action == 4:  # DOWN
+            controller_state = [False, False, False, False, False, True, False, False]
+        elif action == 5:  # JUMP
+            controller_state = [True, False, False, False, False, False, False, False]
+        elif action == 6:  # JUMPLEFT
+            controller_state = [True, False, False, False, False, False, True, False]
+        elif action == 7:  # JUMPRIGHT
+            controller_state = [True, False, False, False, False, False, False, True]
+        elif action == 8:  # JUMPUP
+            controller_state = [True, False, False, False, True, False, False, False]
+
+        rgb_buffer = self.run_frame_headless(run_frames=run_frames, controller1_state=controller_state)
+
+        # Get the reward and info from the memory
+        gameplay_ready = self.memory.read(0x0058)==0 and self.memory.read(0x004e)==0
+        dead = gameplay_ready and self.memory.read(0x0096) == 255
+        gameplay_enabled = gameplay_ready and self.memory.read(0x004f)==1 and self.memory.read(0x00fd)!=0x10
+        victory = gameplay_ready and ((self.memory.read(0x0053)==1 and self.memory.read(0x00fc)==0) or self.memory.read(0x4f)==0)
+
+        info = {
+            "top_score": self.bcd_to_int(list(self.memory.ram[0x0021:0x0024])), # 6 nibbles BCD
+            "score": self.bcd_to_int(list(self.memory.ram[0x0025:0x0028])), # 6 nibbles BCD
+            "time_left": self.bcd_to_int(list(self.memory.ram[0x002e:0x0030])), # 4 nibbles BCD
+            "zone": self.memory.read(0x0400),
+            "level": self.memory.read(0x0402) + 1, # off by 1 according disassembly
+            "lives_left": self.memory.read(0x0404),
+            "raw": list(self.memory.ram[0x004e:0x0050]) + [self.memory.read(0x0053), self.memory.read(0x0058)] + list(self.memory.ram[0x00fc:0x00fe]), 
+            "gameplay_enabled": gameplay_enabled,
+            "dead": dead,
+            "game_over": self.memory.read(0x0407)
+        }
+
+        reward = -1 if dead else 1 if victory else 0
+
+        return (rgb_buffer, reward, info)
+
+    cdef int bcd_to_int(self, list bcd_list):
+        value = 0
+        n = len(bcd_list)
+        for i in range(n):
+            tens = (bcd_list[i] >> 4) & 0xF
+            units = bcd_list[i] & 0xF
+            value += (tens * 10 + units) * 10**((n - 1 - i) * 2)
+        return value
 
 
 

@@ -46,6 +46,9 @@ cdef class NESMappedRAM(MemoryBase):
 
     cdef void run_oam_dma(self, int page)
 
+    cdef object get_ram_state(self)
+    cdef void set_ram_state(self, object state)
+
 
 ######## NES VRAM #####################################################
 

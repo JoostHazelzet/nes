@@ -2,6 +2,7 @@
 
 from .system cimport OAM_DMA, DMC_DMA, DMC_DMA_DURING_OAM_DMA
 from nes.instructions import INSTRUCTION_SET, NamedInstruction, AddressModes
+import json
 
 cdef class MOS6502:
     """
@@ -71,6 +72,42 @@ cdef class MOS6502:
         # reset the cpu
         self.reset()
 
+    # cdef object get_cpu_state(self):
+    #     return [self.A, self.X, self.Y, self.PC, self.SP, self.N, self.V, self.D, self.I, self.Z, self.C, self.cycles_since_reset]
+
+    # cdef void set_cpu_state(self, state):
+    #     self.A, self.X, self.Y, self.PC, self.SP, self.N, self.V, self.D, self.I, self.Z, self.C, self.cycles_since_reset = state
+
+    cdef object get_cpu_state(self):
+        cpu_state = {
+            "A": self.A,
+            "X": self.X,
+            "Y": self.Y,
+            "PC": self.PC,
+            "SP": self.SP,
+            "N": self.N,
+            "V": self.V,
+            "D": self.D,
+            "I": self.I,
+            "Z": self.Z,
+            "C": self.C,
+            "cycles_since_reset": self.cycles_since_reset
+        }
+        return cpu_state
+
+    cdef void set_cpu_state(self, state):
+        self.A = state["A"]
+        self.X = state["X"]
+        self.Y = state["Y"]
+        self.PC = state["PC"]
+        self.SP = state["SP"]
+        self.N = state["N"]
+        self.V = state["V"]
+        self.D = state["D"]
+        self.I = state["I"]
+        self.Z = state["Z"]
+        self.C = state["C"]
+        self.cycles_since_reset = state["cycles_since_reset"]
 
     def reset(self):
         """

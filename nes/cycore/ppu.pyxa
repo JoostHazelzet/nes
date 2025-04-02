@@ -4,9 +4,6 @@
 from .bitwise cimport bit_high, bit_low, set_bit, clear_bit, set_high_byte, set_low_byte
 from .memory cimport NESVRAM, PALETTE_START, NAMETABLE_START, NAMETABLE_LENGTH_BYTES, ATTRIBUTE_TABLE_OFFSET
 
-cimport cython
-import struct
-
 # A NES rgb palette mapping from NES color values to RGB; others are possible.
 cdef int[64][3] DEFAULT_NES_PALETTE = [
     ( 82,  82,  82), (  1,  26,  81), ( 15,  15, 101), ( 35,   6,  99),
@@ -64,11 +61,8 @@ cdef class NESPPU:
         self._pattern_hi = 0   # 16 bit patterns register to hold 2 x 8 bit patterns
 
         # internal memory and latches used in sprite rendering
-        #self._sprite_pattern = [[0] * 8 for _ in range(8)]
-        cdef int[8][8] sprite_pattern = [[0 for _ in range(8)] for _ in range(8)]
-        self._sprite_pattern = sprite_pattern
-        cdef int[8] sprite_bkg_priority = [0 for _ in range(8)]
-        self._sprite_bkg_priority = sprite_bkg_priority
+        self._sprite_pattern = [[0] * 8 for _ in range(8)]
+        self._sprite_bkg_priority = [0] * 8
         self._num_active_sprites = 0
 
         # some state used in rendering to tell us where on the screen we are drawing
@@ -174,7 +168,7 @@ cdef class NESPPU:
             self._io_latch = self._ppu_data_buffer
             return v
 
-    cdef void write_register(self, int register, unsigned char value):
+    cdef void write_register(self, int register, unsigned char value, bool forced=False):
         """
         Write one of the PPU registers with byte value and do whatever else that entails
         """
@@ -185,22 +179,26 @@ cdef class NESPPU:
         self._io_latch = value
 
         if register == PPU_CTRL:
-            # write only
-            # writes to ppu_ctrl are ignored at first
-            # this is a slightly safer mechanism to implement this rather than relying on cycles_since_reset, which
-            # caused a bug by overflowing
-            if self.ignore_ppu_ctrl:
-                if self.cycles_since_reset < 29658:
-                    return
-                else:
-                    self.ignore_ppu_ctrl = False
-            # can trigger an immediate NMI if we are in vblank and the (allow) vblank NMI trigger flag is flipped high
-            trigger_nmi = self.in_vblank \
-                          and (value & VBLANK_MASK) > 0 \
-                          and (self.ppu_ctrl & VBLANK_MASK) == 0
-            self.ppu_ctrl = value
-            if trigger_nmi:
-                self._trigger_nmi()
+            if forced:
+                # Enforced value by the snapshot
+                self.ppu_ctrl = value
+            else:
+                # write only
+                # writes to ppu_ctrl are ignored at first
+                # this is a slightly safer mechanism to implement this rather than relying on cycles_since_reset, which
+                # caused a bug by overflowing
+                if self.ignore_ppu_ctrl:
+                    if self.cycles_since_reset < 29658:
+                        return
+                    else:
+                        self.ignore_ppu_ctrl = False
+                # can trigger an immediate NMI if we are in vblank and the (allow) vblank NMI trigger flag is flipped high
+                trigger_nmi = self.in_vblank \
+                            and (value & VBLANK_MASK) > 0 \
+                            and (self.ppu_ctrl & VBLANK_MASK) == 0
+                self.ppu_ctrl = value
+                if trigger_nmi:
+                    self._trigger_nmi()
         elif register == PPU_MASK:
             # write only
             self.ppu_mask = value
@@ -263,6 +261,70 @@ cdef class NESPPU:
             if self.ppu_addr >= PALETTE_START:
                 self.invalidate_palette_cache()
 
+    ################ Screen buffer copy and clear ######################################################################
+
+    # cdef object get_ppu_state(self):
+    #     return [0, 0, 0]
+        # return [
+        #     self.ppu_ctrl,
+        #     self.ppu_mask,
+        #     self.oam_addr,
+        #     self.oam_data,
+        #     self.ppu_scroll,
+        #     self.ppu_addr,
+        #     self._ppu_byte_latch,
+        #     self._ppu_data_buffer,
+        #     self._io_latch,
+        #     self._palette,
+        #     self._pattern_lo,
+        #     self._pattern_hi,
+        #     self._sprite_pattern,
+        #     self._sprite_bkg_priority,
+        #     self._num_active_sprites,
+        #     self.line,
+        #     self.pixel,
+        #     self.in_vblank,
+        #     self.sprite_zero_hit,
+        #     self.sprite_overflow,
+        #     self.ignore_ppu_ctrl,
+        #     self.cycles_since_reset,
+        #     self.frames_since_reset,
+        #     self.vram,
+        #     self.interrupt_listener,
+        #     self.transparent_color,
+        #     self._palette_cache_valid,
+        #     self.irq_tick_triggers]
+    
+    # cdef void set_ppu_state(self, object state):
+    #     pass
+        # self.ppu_ctrl = state[0]
+        # self.ppu_mask = state[1]
+        # self.oam_addr = state[2]
+        # self.oam_data = state[3]
+        # self.ppu_scroll = state[4]
+        # self.ppu_addr = state[5]
+        # self._ppu_byte_latch = state[6]
+        # self._ppu_data_buffer = state[7]
+        # self._io_latch = state[8]
+        # self._palette = state[9]
+        # self._pattern_lo = state[10]
+        # self._pattern_hi = state[11]
+        # self._sprite_pattern = state[12]
+        # self._sprite_bkg_priority = state[13]
+        # self._num_active_sprites = state[14]
+        # self.line = state[15]
+        # self.pixel = state[16]
+        # self.in_vblank = state[17]
+        # self.sprite_zero_hit = state[18]
+        # self.sprite_overflow = state[19]
+        # self.ignore_ppu_ctrl = state[20]
+        # self.cycles_since_reset = state[21]
+        # self.frames_since_reset = state[22]
+        # self.vram = state[23]
+        # self.interrupt_listener = state[24]
+        # self.transparent_color = state[25]
+        # self._palette_cache_valid = state[26]
+        # self.irq_tick_triggers = state[27]
 
     ################ Screen buffer copy and clear ######################################################################
 
@@ -564,9 +626,6 @@ cdef class NESPPU:
             for x in range(8):
                 c = bit_high(sprite_pattern_hi, x) * 2 + bit_high(sprite_pattern_lo, x)
                 self._sprite_pattern[i][x if flip_h else 7 - x] = palette[c] if c else self.transparent_color
-                # JH: Added print to debug the int story in list
-                if palette[c] > 255:
-                    print(f"palette[{c}] = ", palette[c])
 
         if double_sprites and self._num_active_sprites < 8:
             # at this point, the PPU does some reads from table 1 that are discarded, but that means that if the table
@@ -854,86 +913,5 @@ cdef class NESPPU:
 
                 if pixel_color_ix > 0:
                     dest[x0 + xx, y0 + yy] = self.hex_palette[palette[pixel_color_ix]]
-
-    ################ Screen buffer copy and clear ######################################################################
-
-    cdef object get_ppu_state(self):
-        ppu_state = {
-            "ppu_ctrl": self.ppu_ctrl,
-            "ppu_mask": self.ppu_mask,
-            "oam_addr": self.oam_addr,
-            "oam_data": self.oam_data,
-            # "ppu_scroll": self.ppu_scroll, # Donkey kong doesn't use scrolling
-            "ppu_addr": self.ppu_addr,
-            "_ppu_byte_latch": self._ppu_byte_latch,
-            "_ppu_data_buffer": self._ppu_data_buffer,
-            "_io_latch": self._io_latch,
-            "_palette": self._palette,
-            "_pattern_lo": self._pattern_lo,
-            "_pattern_hi": self._pattern_hi,
-            "_sprite_pattern": self._sprite_pattern,
-            "_sprite_bkg_priority": self._sprite_bkg_priority,
-            "_num_active_sprites": self._num_active_sprites,
-            "line": self.line,
-            "pixel": self.pixel,
-            "in_vblank": self.in_vblank,
-            "sprite_zero_hit": self.sprite_zero_hit,
-            "sprite_overflow": self.sprite_overflow,
-            "ignore_ppu_ctrl": self.ignore_ppu_ctrl,
-            "cycles_since_reset": self.cycles_since_reset,
-            "frames_since_reset": self.frames_since_reset,
-            "vram": [self.vram.read(a) for a in range(0x4000)],
-            #"interrupt_listener": self.interrupt_listener, # function
-            #"transparent_color": self.transparent_color, # fixed value
-            "_palette_cache_valid": self._palette_cache_valid,
-            "irq_tick_triggers": self.irq_tick_triggers
-        }
-        return ppu_state
-    
-    cdef void set_ppu_state(self, object state):
-    
-        self.ppu_ctrl = state["ppu_ctrl"]
-        self.ppu_mask = state["ppu_mask"]
-        self.oam_addr = state["oam_addr"]
-        self.oam_data = state["oam_data"]
-        
-        self.ppu_addr = state["ppu_addr"]
-        self._ppu_byte_latch = state["_ppu_byte_latch"]
-        self._ppu_data_buffer = state["_ppu_data_buffer"]
-        self._io_latch = state["_io_latch"]
-        self._palette = state["_palette"]
-        self._pattern_lo = state["_pattern_lo"]
-        self._pattern_hi = state["_pattern_hi"]
-
-        cdef int[8][8] sprite_pattern = [[0 for _ in range(8)] for _ in range(8)]
-        for i in range(8):
-            if (len(state["_sprite_pattern"][i]) % 4) == 0 and len(state["_sprite_pattern"][i]) > 0:
-                int32_list = list(struct.unpack(f'{len(state["_sprite_pattern"][i])//4}i', state["_sprite_pattern"][i]))
-                for j in range(len(int32_list)):
-                    sprite_pattern[i][j] = int32_list[j]
-        self._sprite_pattern = sprite_pattern
-
-        cdef int[8] sprite_bkg_priority = [0 for _ in range(8)]
-        if (len(state["_sprite_bkg_priority"]) % 4) == 0 and len(state["_sprite_bkg_priority"]) > 0:
-            int32_list = list(struct.unpack(f'{len(state["_sprite_bkg_priority"])//4}i', state["_sprite_bkg_priority"]))
-            for i in range(8):
-                sprite_bkg_priority[i] = int32_list[i]
-        self._sprite_bkg_priority = sprite_bkg_priority
-        
-        self._num_active_sprites = state["_num_active_sprites"]
-        self.line = state["line"]
-        self.pixel = state["pixel"]
-        self.in_vblank = state["in_vblank"]
-        self.sprite_zero_hit = state["sprite_zero_hit"]
-        self.sprite_overflow = state["sprite_overflow"]
-        self.ignore_ppu_ctrl = state["ignore_ppu_ctrl"]
-        self.cycles_since_reset = state["cycles_since_reset"]
-        self.frames_since_reset = state["frames_since_reset"]
-
-        for a in range(len(state["vram"])):
-            self.vram.write(a, state["vram"][a])
-
-        self._palette_cache_valid = state["_palette_cache_valid"]
-        self.irq_tick_triggers = state["irq_tick_triggers"]
 
 

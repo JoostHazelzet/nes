@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="pyntendo",
-    version="0.0.8",
+    version="0.0.10",
     author="James Murphy",
     author_email="jkmurphy314@gmail.com",
     description="A Nintendo Entertainment System (NES) emulator in Python and Cython",

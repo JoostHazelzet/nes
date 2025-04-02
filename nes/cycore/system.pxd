@@ -59,3 +59,9 @@ cdef class NES:
     cdef int step(self, int log_cpu)
     cpdef void run(self)
     cpdef object run_frame_headless(self, int run_frames=?, object controller1_state=?, object controller2_state=?)
+    cpdef object get_snapshot(self)
+    cpdef object set_snapshot(self, object state)
+    cpdef object step_rl(self, int action=?, int run_frames=?)
+
+    # Local function
+    cdef int bcd_to_int(self, list bcd_array)

@@ -139,6 +139,10 @@ cdef class NESPPU:
     cdef void write_register(self, int register, unsigned char value)
     cdef unsigned char ppu_status(self)
 
+    # get and set snapshot  
+    cdef object get_ppu_state(self)
+    cdef void set_ppu_state(self, object state)
+
     # running ppu cycles
     cdef int run_cycles(self, int num_cycles)
     cdef void prerender_scanline(self)

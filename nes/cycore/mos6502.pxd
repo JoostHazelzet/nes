@@ -47,6 +47,9 @@ cdef class MOS6502:
     # instruction size data table
     cdef int instr_size_bytes[256]
 
+    # get and set snapshot  
+    cdef object get_cpu_state(self)
+    cdef void set_cpu_state(self, object state)
 
     cdef void make_instruction_data_tables(self)
     cdef int run_instr(self, unsigned char opcode, unsigned char data[2])
