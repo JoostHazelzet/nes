@@ -30,90 +30,264 @@ Added functions to `nes/cycore/system.pyd/pyx`:
 -  cpdef object set_snapshot(self, object state)
 -  cpdef object step_rl(self, int action=?, int run_frames=?)
 
-## Usage
+## Development Environment Setup
 
-Basic usage:
+This project uses **direnv** for automatic environment management. When you enter the project directory, direnv will automatically:
 
-    from nes import NES
-    nes = NES("my_rom.nes")
-    nes.run()
+- Set up Python virtual environment with uv
+- Install all required dependencies (NumPy, Pygame, Cython, etc.)
+- Configure development shortcuts and aliases
+- Set environment variables for optimal development
 
-Full set of options:
+### Prerequisites
 
-    from nes import NES, SYNC_AUDIO, SYNC_NONE, SYNC_PYGAME, SYNC_VSYNC
+- **Python 3.8+** for modern dependency compatibility
+- **uv** for fast Python package management
+- **direnv** for environment management
+- **PortAudio** for audio support: `brew install portaudio` (macOS)
 
-    nes = NES(rom_file,                  # the rom file to load
-              screen_scale=3,            # factor by which to scale the screen (NES screen is 256x240 pixels with overscan)
-              log_file=None,             # file to log to (logging is largely turned off by default and is exceptionally slow for high-volume parts of the system)
-              log_level=None,            # level of logging (logging is largely turned off by default)
-              opengl=False,              # use opengl for screen rendering
-              sync_mode=SYNC_AUDIO,      # audio / video sync mode  (one of SYNC_AUDIO, SYNC_NONE, SYNC_PYGAME, SYNC_VSYNC; see below)
-              verbose=True,              # whether to print out cartridge info at startup
-              show_nametables=False,     # shows the nametables alongside the main screen (for debug, not compatible with opengl=True)
-              vertical_overscan=False,   # show the top and bottom 8 pixels (not usually visible on CRT TVs)
-              horizontal_overscan=False, # show the left and right 8 pixels (often not visible on CRT TVs)
-              palette_file=None,         # supply a palette file to use; None gives default
-              headless=False,            # runs the nes in headless mode without the pygame screen being started
-              )
+### Installation
 
-Sync mode controls how the framerate is controlled and synced to screen/audio.  The available modes are as follows:
+1. **Install direnv** (if not already installed):
+   ```bash
+   # macOS
+   brew install direnv
+   
+   # Add to your shell profile (.zshrc, .bashrc, etc.)
+   eval "$(direnv hook zsh)"  # or bash
+   ```
 
-    SYNC_NONE = 0  # no sync: runs very fast, unplayable, music is choppy
-    SYNC_AUDIO = 1  # sync to audio: rate is perfect, can glitch sometimes, screen tearing can be bad
-    SYNC_PYGAME = 2  # sync to pygame's clock, adaptive audio: generally reliable, some screen tearing
-    SYNC_VSYNC = 3  # sync to external vsync, adaptive audio: requires ~60Hz vsync, no tearing
+2. **Install uv** (if not already installed):
+   ```bash
+   # macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
+3. **Install system dependencies**:
+   ```bash
+   # macOS (for audio support)
+   brew install portaudio
+   
+   # Ubuntu/Debian
+   sudo apt-get install portaudio19-dev
+   ```
 
-Pure python version:
+4. **Enter the project directory**:
+   ```bash
+   cd nes
+   direnv allow  # Allow direnv to load environment
+   ```
 
-(This is purely for interest and comparison to the Cython version.  It is very slow, has no APU, is not up to date, has some (more) bugs than the cython version and has not been developed for a while.):
+5. **Install development dependencies**:
+   ```bash
+   install-dev  # Installs all dependencies including Jupyter
+   ```
 
-    from nes.pycore.system import NES as pyNES
-    pynes = pyNES("my_rom.nes")
-    pynes.run()
+## Development Commands
 
-## Screenshots
+### Navigation Shortcuts
 
-Here are some screenshots of the emulator in action: Super Mario Brothers, Donkey Kong, MegaMan
+| Command | Description |
+|---------|-------------|
+| `root` | Navigate to project root directory |
+| `core` | Navigate to main nes core directory |
+| `cycore` | Navigate to Cython core implementation |
+| `pycore` | Navigate to Pure Python core (legacy) |
+| `tests` | Navigate to tests directory |
+| `img` | Navigate to screenshot images |
+| `palettes` | Navigate to NES color palettes |
+| `shader` | Navigate to OpenGL shaders |
 
-<img src="/img/mario.png" height="300">
-<img src="/img/donkeykong.png" height="300">
-<img src="/img/megaman.png" height="300">
+### Python Environment
 
-## Controls
+| Command | Description |
+|---------|-------------|
+| `install` | Install/sync dependencies with uv |
+| `install-dev` | Install with development dependencies |
+| `install-editable` | Install package in editable mode |
+| `python` | Run Python with uv environment |
+| `pip` | Use pip within uv environment |
 
-Default keymap is:
+### Cython Development
 
-    Up, Left, Down, Right: W, A, S, D
-    Select, Start:  G, H
-    A, B: P, L
+| Command | Description |
+|---------|-------------|
+| `build` | Compile Cython extensions |
+| `build-dev` | Compile with debug information |
+| `clean-build` | Clean all build artifacts |
+| `rebuild` | Clean and rebuild everything |
 
-OSD/Volume controls:
+### NES Emulator
 
-    Turn off OSD:  1
-    Start CPU logging (very slow): 2
-    Volume Down/Up: -, =
-    Mute: 0
+| Command | Description |
+|---------|-------------|
+| `nes` | Run NES emulator with main.py |
+| `nes-headless` | Run in headless mode for testing |
+| `test-nes` | Run NES-specific tests |
 
+### Jupyter Development
 
-## Dependencies
+| Command | Description |
+|---------|-------------|
+| `jupyter` | Access Jupyter command |
+| `jupyter-lab` | Start Jupyter Lab |
+| `jupyter-notebook` | Start Jupyter Notebook |
+| `demo` | Open Headless Demo notebook |
 
-Depends on the following libraries for key functionality:
-* numpy (optional?)
-  * headless operation
-  * (possibly also required by pygame surfarray, used in rendering)
-* pygame (optional)
-  * timing
-  * rendering
-  * input
-  * (without pygame, only headless operation is possible)
-* pyaudio (optional)
-  * audio playing
-  * sync to audio
-* pyopengl (optional)
-  * OpenGL rendering
-  * (not essential; can use SDL rendering via pygame)
+### Development Workflows
 
-## License
+| Command | Description |
+|---------|-------------|
+| `dev` | Start Jupyter Lab (default development) |
+| `test` | Run test suite with pytest |
+| `test-watch` | Run tests in watch mode |
 
-Distributed under the MIT License (see [here](LICENSE))
+### Build and Package
+
+| Command | Description |
+|---------|-------------|
+| `build-wheel` | Build wheel distribution |
+| `build-sdist` | Build source distribution |
+| `build-all` | Build both wheel and source |
+
+## Environment Variables
+
+The project automatically configures these environment variables:
+
+- **PROJECT_NAME**: `pyntendo`
+- **NES_ROOT**: Project root directory
+- **NES_CORE_DIR**: Main NES core (`nes/`)
+- **CYCORE_DIR**: Cython implementation (`nes/cycore/`)
+- **PYCORE_DIR**: Pure Python implementation (`nes/pycore/`)
+- **Cython Settings**: Optimized compilation flags
+- **NES_SYNC_MODE**: Audio sync mode (1 = SYNC_AUDIO)
+- **NES_SCREEN_SCALE**: Display scaling (3x)
+
+## Quick Start
+
+### Development Mode
+
+1. **Start Jupyter development environment**:
+   ```bash
+   dev  # Opens Jupyter Lab for interactive development
+   ```
+
+2. **Work with the Headless Demo**:
+   ```bash
+   demo  # Opens the Headless Demo notebook
+   ```
+
+3. **Build and test Cython extensions**:
+   ```bash
+   rebuild  # Clean and rebuild Cython code
+   test     # Run tests to verify functionality
+   ```
+
+### Running the Emulator
+
+1. **Basic emulation**:
+   ```bash
+   nes path/to/rom.nes  # Run with GUI
+   ```
+
+2. **Headless operation** (for RL/automation):
+   ```bash
+   nes-headless  # Programmatic control
+   ```
+
+3. **Custom configuration**:
+   ```bash
+   python -c "from nes import NES; nes = NES('rom.nes', screen_scale=4, sync_mode=2)"
+   ```
+
+## Development Workflow
+
+### Cython Development Cycle
+
+1. **Edit Cython files** in `nes/cycore/`:
+   ```bash
+   cycore               # Navigate to Cython source
+   # Edit .pyx files
+   ```
+
+2. **Rebuild and test**:
+   ```bash
+   rebuild              # Compile Cython extensions
+   test-nes             # Run NES-specific tests
+   ```
+
+3. **Interactive testing**:
+   ```bash
+   demo                 # Use Headless Demo notebook
+   ```
+
+### Adding New Features
+
+1. **Implement in Cython**: Add to `nes/cycore/system.pyx`
+2. **Update headers**: Modify `nes/cycore/system.pxd`
+3. **Rebuild**: Run `rebuild` command
+4. **Test**: Use `demo` notebook or `test-nes`
+5. **Document**: Update docstrings and README
+
+### Performance Optimization
+
+1. **Profile performance**:
+   ```bash
+   python -c "import cProfile; cProfile.run('from nes import NES; nes = NES(\"rom.nes\"); nes.run()')"
+   ```
+
+2. **Cython optimization**: Use compilation flags in environment
+3. **Memory profiling**: Use Jupyter notebooks for analysis
+
+## Project Structure
+
+```
+nes/
+├── nes/                        # Main package
+│   ├── cycore/                 # High-performance Cython implementation
+│   │   ├── system.pyx         # Core emulator system
+│   │   ├── system.pxd         # Cython header definitions
+│   │   └── *.pyx              # Other Cython modules
+│   ├── pycore/                 # Pure Python reference implementation
+│   │   └── system.py          # Python emulator (slow, for reference)
+│   ├── instructions.py        # 6502 instruction definitions
+│   ├── peripherals.py         # Input/output handling
+│   ├── rom.py                  # ROM loading and parsing
+│   └── utils.py                # Utility functions
+├── tests/                      # Test suite
+├── img/                        # Screenshots and demo images
+├── palettes/                   # NES color palette files
+├── shader/                     # OpenGL shader files
+├── main.py                     # CLI entry point
+├── Headless Demo.ipynb         # Interactive demo notebook
+├── setup.py                    # Build configuration
+├── pyproject.toml              # Modern Python project config
+└── .envrc                      # direnv configuration
+```
+
+## Custom Modifications (by Joost)
+
+This fork includes additional functionality for machine learning applications:
+
+### Enhanced System Interface
+
+**Added functions** to `nes/cycore/system.pyx`:
+- `cpdef object get_snapshot(self)` - Capture complete emulator state
+- `cpdef object set_snapshot(self, object state)` - Restore emulator state  
+- `cpdef object step_rl(self, int action=?, int run_frames=?)` - RL environment step
+
+### Development Process for Cython Changes
+
+1. **Edit Cython files**: Modify `.pyx` and `.pxd` files
+2. **Rebuild**: Run `rebuild` to recompile extensions
+3. **Restart Jupyter**: Kernel restart required to load new extensions
+4. **Test**: Verify functionality in notebooks or tests
+
+### Installation of Modified Package
+
+```bash
+install-editable  # Install package in development mode
+# Makes changes immediately available without reinstall
+```
+
+The direnv environment handles the complete development lifecycle automatically! 🎮🐍⚡

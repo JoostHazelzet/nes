@@ -3,4 +3,48 @@ requires = [
     "setuptools",
     "wheel",
     "Cython"
-   ]
+]
+
+[project]
+name = "pyntendo"
+version = "0.0.10"
+description = "A Nintendo Entertainment System (NES) emulator in Python and Cython"
+authors = [
+    {name = "James Murphy", email = "jkmurphy314@gmail.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pygame",
+    "pyaudio",
+    "pyopengl",
+    "cython",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "jupyter",
+    "jupyterlab",
+    "ipykernel",
+    "build",
+    "wheel",
+]
+
+[project.urls]
+Homepage = "https://github.com/jameskmurphy/nes"
+Repository = "https://github.com/jameskmurphy/nes"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nes*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py36"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
